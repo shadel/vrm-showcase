@@ -1,45 +1,67 @@
 // src/hooks/useVRMStore.ts
-import create from 'zustand'
-import { VRM } from '@pixiv/three-vrm'
-import { FirebaseService } from '../services/firebaseService'
+import { useState, useEffect } from 'react'
+import { VRMModel } from '../services/interfaces'
+import { useFirebaseService } from '../contexts/FirebaseServiceContext'
 
-interface VRMModel {
-  id: string
-  name: string
-  vrmUrl: string
-  vrmObject: VRM | null
+const useVRMStore = () => {
+  const firebaseService = useFirebaseService()
+  const [vrmModels, setVrmModels] = useState<VRMModel[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const models = await firebaseService.fetchVRMModels()
+        setVrmModels(models)
+      } catch (err) {
+        handleError(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [firebaseService])
+
+  const handleError = (err: unknown) => {
+    if (err instanceof Error) {
+      setError(err.message)
+    } else {
+      setError('An unknown error occurred')
+    }
+  }
+
+  const addVRMModel = async (name: string, file: File) => {
+    try {
+      const newModel = await firebaseService.addVRMModel(name, file)
+      setVrmModels((prevModels) => [...prevModels, newModel])
+    } catch (err) {
+      handleError(err)
+    }
+  }
+
+  const editVRMModel = async (id: string, updatedModel: Partial<VRMModel>) => {
+    try {
+      await firebaseService.editVRMModel(id, updatedModel)
+      setVrmModels((prevModels) =>
+        prevModels.map((model) => (model.id === id ? { ...model, ...updatedModel } : model))
+      )
+    } catch (err) {
+      handleError(err)
+    }
+  }
+
+  const deleteVRMModel = async (id: string, vrmUrl: string) => {
+    try {
+      await firebaseService.deleteVRMModel(id, vrmUrl)
+      setVrmModels((prevModels) => prevModels.filter((model) => model.id !== id))
+    } catch (err) {
+      handleError(err)
+    }
+  }
+
+  return { vrmModels, loading, error, addVRMModel, editVRMModel, deleteVRMModel }
 }
 
-interface VRMStore {
-  vrmModels: VRMModel[]
-  fetchVRMModels: () => void
-  addVRMModel: (name: string, file: File) => void
-  editVRMModel: (id: string, updatedModel: Partial<VRMModel>) => void
-  deleteVRMModel: (id: string, vrmUrl: string) => void
-}
-
-export const useVRMStore = create<VRMStore>((set) => ({
-  vrmModels: [],
-  fetchVRMModels: async () => {
-    const vrmModels = await FirebaseService.fetchVRMModels()
-    set({ vrmModels })
-  },
-  addVRMModel: async (name, file) => {
-    const newModel = await FirebaseService.addVRMModel(name, file)
-    set((state) => ({ vrmModels: [...state.vrmModels, newModel] }))
-  },
-  editVRMModel: async (id, updatedModel) => {
-    await FirebaseService.editVRMModel(id, updatedModel)
-    set((state) => ({
-      vrmModels: state.vrmModels.map((model) =>
-        model.id === id ? { ...model, ...updatedModel } : model
-      ),
-    }))
-  },
-  deleteVRMModel: async (id, vrmUrl) => {
-    await FirebaseService.deleteVRMModel(id, vrmUrl)
-    set((state) => ({
-      vrmModels: state.vrmModels.filter((model) => model.id !== id),
-    }))
-  },
-}))
+export default useVRMStore
