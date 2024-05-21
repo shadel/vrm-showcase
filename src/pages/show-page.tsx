@@ -1,4 +1,4 @@
-// src/pages/show-page.tsx
+// pages/show-page.tsx
 import { useState } from 'react'
 import VRMSelector from '../components/ShowPage/VRMSelector'
 import VRMDisplay from '../components/ShowPage/VRMDisplay'
@@ -12,7 +12,7 @@ const ShowPage = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [vrm, setVrm] = useState<VRM | null>(null)
 
-  const videoRef = usePoseController(videoFile as File, vrm)
+  const videoRef = usePoseController(videoFile, vrm)
 
   const handleSelectVRM = (vrmUrl: string) => {
     setSelectedVRMUrl(vrmUrl)
@@ -29,14 +29,24 @@ const ShowPage = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <h1 className="text-3xl font-bold">Show VRM Model</h1>
-      <VRMSelector onSelect={handleSelectVRM} />
+    <div className="space-y-8">
+      <h1 className="text-4xl font-bold text-center mb-8">Show VRM Model</h1>
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <VRMSelector onSelect={handleSelectVRM} />
+      </div>
       {selectedVRMUrl && (
         <>
-          <VRMDisplay vrmUrl={selectedVRMUrl} onLoad={handleVRMLoaded} />
-          <VideoUploader onUpload={handleVideoUpload} />
-          {videoFile && vrm && <video ref={videoRef} className="w-full h-full" />}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <VRMDisplay vrmUrl={selectedVRMUrl} onLoad={handleVRMLoaded} />
+          </div>
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <VideoUploader onUpload={handleVideoUpload} />
+          </div>
+          {videoFile && vrm && (
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <video ref={videoRef} className="w-full h-auto" controls />
+            </div>
+          )}
         </>
       )}
     </div>
